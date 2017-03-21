@@ -19,13 +19,13 @@
 
 # define BUFF_SIZE 10
 
-/*typedef struct		s_line
+typedef struct		s_line
 {
 	char			*str;
-	int				check_fd;
+	int				fd;
 	struct s_line	*next;
 
-}					t_line;*/
+}					t_line;
 
 int					get_next_line(const int fd, char **line);
 

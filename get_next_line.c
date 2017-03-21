@@ -6,13 +6,32 @@
 /*   By: yzakharc <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/12/22 15:53:23 by yzakharc          #+#    #+#             */
-/*   Updated: 2017/03/16 08:49:31 by yzakharc         ###   ########.fr       */
+/*   Updated: 2017/03/21 20:20:08 by yzakharc         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "get_next_line.h"
 
-int	ft_check(char *str, int *i)
+static char	**ft_check_fd(const int fd, t_line **head)
+{
+	t_line *tmp;
+
+	tmp = *head;
+	while (tmp)
+	{
+		if (tmp->fd == fd)
+			return (&(tmp->str));
+		tmp = tmp->next;
+	}
+	tmp = (t_line *)malloc(sizeof(t_line));
+	tmp->fd = fd;
+	tmp->str = ft_strnew(0);
+	tmp->next = (*head);
+	(*head) = tmp;
+	return (&(tmp->str));
+}
+
+static int	ft_check(char *str, int *i)
 {
 	int j;
 
@@ -27,7 +46,16 @@ int	ft_check(char *str, int *i)
 	return (j);
 }
 
-int	ft_write(char **str, char **line)
+static void	ft_cat_str(char **str, int i)
+{
+	int n;
+
+	n = -1;
+	while ((*str)[i] && **str)
+		(*str)[++n] = (*str)[++i];
+}
+
+static int	ft_write(char **str, char **line)
 {
 	int	i;
 	int j;
@@ -42,31 +70,33 @@ int	ft_write(char **str, char **line)
 	}
 	if ((**str && **line) || (!**line && **str == '\n') || (**line && !**str))
 		j = 1;
-	!**str && !**line ? j = 0 : 0;
-	**str != '\0' ? (*str) += i + 1 : 0;
+	ft_cat_str(str, i);
 	return (j);
 }
 
 int			get_next_line(const int fd, char **line)
 {
-	static char	*str;
-	char		*buf;
-	ssize_t		r_res;
+	char			**str;
+	char			*temp;
+	ssize_t			r_res;
+	static t_line	*head;
+	char			*dump;
 
-	buf = ft_strnew(BUFF_SIZE);
-	while ((r_res = read(fd, buf, BUFF_SIZE)) > 0)
-	{
-		str = (str == NULL) ? ft_strdup(buf) : ft_strjoin(str, buf);
-		ft_strclr(buf);
-		if (ft_strchr(str, '\n'))
-			break ;
-	}
-	if (r_res == 0 && !ft_strlen(str))
-	{
-		**line ? **line = '\0' : 0;
-		return (0);
-	}
-	if (r_res == -1 || fd == -1)
+	temp = ft_strnew(BUFF_SIZE);
+	if (((read(fd, temp, 0)) < 0) || fd < 0 || BUFF_SIZE <= 0)
 		return (-1);
-	return (ft_write(&str, line));
+	str = ft_check_fd(fd, &head);
+	while ((r_res = read(fd, temp, BUFF_SIZE)) > 0)
+	{
+		dump = *str;
+		*str = ft_strjoin(dump, temp);
+		ft_strdel(&dump);
+		if (ft_strchr(*str, '\n'))
+			break ;
+		ft_strclr(temp);
+	}
+	ft_strdel(&temp);
+	if (r_res == 0 && !ft_strlen(*str))
+		return (0);
+	return (ft_write(&(*str), line));
 }
